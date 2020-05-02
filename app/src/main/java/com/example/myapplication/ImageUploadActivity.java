@@ -5,18 +5,23 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 
+import android.database.Cursor;
 import android.graphics.Bitmap;
 
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -25,7 +30,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -177,9 +184,10 @@ public class ImageUploadActivity extends AppCompatActivity {
 
     // Upload Image to Server..
     public void uploadImage() {
+
         File imageFile;
         try {
-            imageFile = FileUtil.from(this, pickedImgUri);
+            imageFile = FileUtil.from(this, getImageUriFromBitmap(this));
             Toast.makeText(this, "Uploading..." + imageFile.getName(), Toast.LENGTH_SHORT).show();
             Log.d("file", "File...:::: uti - "+imageFile .getPath()+" file -" + imageFile + " : " + imageFile .exists());
 
@@ -226,7 +234,41 @@ public class ImageUploadActivity extends AppCompatActivity {
         }
 
 
+
+
     }
+
+    public Uri getImageUriFromBitmap(Context context){
+        Uri data = null;
+        Bitmap bitmap = ImageUtils.getInstant().getCompressedBitmap(getRealPathFromURI(ImageUploadActivity.this,pickedImgUri),50);
+        // Bitmap bitmap = BitmapFactory.decodeFile (pickedImgUri.getPath());
+        // bitmap.compress (Bitmap.CompressFormat.JPEG, compressionRatio, new FileOutputStream(pickedImgUri));
+        // Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), pickedImgUri);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(context.getContentResolver(), bitmap, "Title", null);
+        return Uri.parse(path.toString());
+    }
+
+    public String getRealPathFromURI(Activity context, Uri contentURI) {
+        String[] projection = { MediaStore.Images.Media.DATA };
+        @SuppressWarnings("deprecation")
+        Cursor cursor = context.managedQuery(contentURI, projection, null,
+                null, null);
+        if (cursor == null)
+            return null;
+        int column_index = cursor
+                .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        if (cursor.moveToFirst()) {
+            String s = cursor.getString(column_index);
+            // cursor.close();
+            return s;
+        }
+        // cursor.close();
+        return null;
+    }
+
+
 
 
 }
